@@ -1,0 +1,64 @@
+// ----------------------------------------------------------------------
+// BadSuccessor (CVE-2025-53779) Hunting Queries for Microsoft Sentinel
+// ----------------------------------------------------------------------
+
+// 1. New dMSA creation by non-privileged users
+// Look for Event ID 4720 (User Account Creation) with objectClass = msDS-GroupManagedServiceAccount
+// and the caller is not a member of high-privilege groups.
+SecurityEvent
+| where EventID == 4720
+| where NewObjectClass contains "msDS-GroupManagedServiceAccount"
+| extend CallerSid = tostring(Property["Caller User SID"])
+| join kind=leftouter (
+    IdentityInfo
+    | where GroupSid in ("S-1-5-21-*-512", "S-1-5-21-*-519") // Domain Admins, Enterprise Admins
+    | project AccountSid = UserSid, IsAdmin = true
+) on $left.CallerSid == $right.AccountSid
+| where IsAdmin != true
+| project TimeGenerated, CallerSid, TargetUserName = tostring(Property["Target User Name"]), NewObjectClass
+
+// 2. Modification of msDS-ManagedAccountPrecededByLink
+// Event ID 5136 (Directory Service Change) with attribute name matching.
+SecurityEvent
+| where EventID == 5136
+| extend AttributeName = tostring(Property["Attribute LDAP Display Name"])
+| where AttributeName in ("msDS-ManagedAccountPrecededByLink", "msDS-DelegatedMSAState")
+| extend CallerSid = tostring(Property["Caller User SID"])
+| join kind=leftouter (
+    IdentityInfo
+    | where GroupSid in ("S-1-5-21-*-512", "S-1-5-21-*-519")
+    | project AccountSid = UserSid, IsAdmin = true
+) on $left.CallerSid == $right.AccountSid
+| where IsAdmin != true
+| project TimeGenerated, CallerSid, ObjectDN = tostring(Property["Object DN"]), AttributeName, NewValue = tostring(Property["Attribute Value"])
+
+// 3. Suspicious TGS request for dMSA (Event ID 4769)
+// Filter for service tickets where the service name is a dMSA account (ends with $)
+// and the ticket options include S4U2Self (0x40810000).
+SecurityEvent
+| where EventID == 4769
+| extend TargetUserName = tostring(Property["Target User Name"])
+| where TargetUserName endswith "$"          // dMSA or computer account
+| extend TicketOptions = tostring(Property["Ticket Options"])
+| where TicketOptions has "0x40810000"       // S4U2Self flag
+| extend ServiceName = tostring(Property["Service Name"])
+| extend ClientAddress = tostring(Property["Client Address"])
+| project TimeGenerated, ClientAddress, TargetUserName, ServiceName, TicketOptions
+
+// 4. Correlation: computer account TGT followed by dMSA TGS
+// Look for a computer account (ends with $) getting a TGT (Event 4768) and then
+// within 5 minutes requesting a TGS for a dMSA (Event 4769).
+let tgtEvents = SecurityEvent
+| where EventID == 4768
+| extend ComputerAccount = tostring(Property["Target User Name"])
+| where ComputerAccount endswith "$"
+| project TimeGenerated, ComputerAccount, ClientAddress = tostring(Property["Client Address"]);
+let tgsEvents = SecurityEvent
+| where EventID == 4769
+| extend dMSAName = tostring(Property["Target User Name"])
+| where dMSAName endswith "$"
+| project TimeGenerated, dMSAName, ClientAddress = tostring(Property["Client Address"]);
+tgtEvents
+| join kind=inner tgsEvents on ClientAddress
+| where tgsEvents.TimeGenerated between (tgtEvents.TimeGenerated .. 5m)
+| project tgtTime = tgtEvents.TimeGenerated, tgsTime = tgsEvents.TimeGenerated, ComputerAccount, dMSAName, ClientAddress
