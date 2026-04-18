@@ -1,9 +1,3 @@
-
----
-
-## 5. `src/Invoke-BadSuccessor.ps1`
-
-```powershell
 <#
 .SYNOPSIS
     Fully automated exploitation of the BadSuccessor vulnerability (CVE-2025-53779) in Windows Server 2025 AD.
