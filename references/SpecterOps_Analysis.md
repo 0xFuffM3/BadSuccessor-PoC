@@ -18,7 +18,7 @@ SpecterOps expanded on Akamai’s discovery, focusing on detection and real-worl
 - Harden OUs: remove `CreateChild` from non‑admins, especially on `CN=Computers`.
 
 **Full Article:**  
-[SpecterOps – BadSuccessor Deep Dive](https://specterops.io/badsuccessor-analysis)
+[SpecterOps – BadSuccessor Deep Dive](https://specterops.io/blog/2025/10/20/the-near-return-of-the-king-account-takeover-using-the-badsuccessor-technique/)
 
 **Relevant Tools:**  
 - [Rubeus (GhostPack)](https://github.com/GhostPack/Rubeus) – v2.5.0+ includes `/dmsa`
