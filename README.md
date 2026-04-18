@@ -114,7 +114,7 @@ dsacls "CN=Computers,DC=lab,DC=local" /G "LAB\lowpriv:CCDC;computer"
 
 ```bash
 git clone https://github.com/0xFuffM3/BadSuccessor-PoC.git
-cd Advanced-BadSuccessor
+cd BadSuccessor-PoC
 ```
 
 Place `Rubeus.exe` in the repository root or in `src/`.
