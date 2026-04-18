@@ -113,7 +113,7 @@ dsacls "CN=Computers,DC=lab,DC=local" /G "LAB\lowpriv:CCDC;computer"
 ## 🔧 Installation & Setup
 
 ```bash
-git clone https://github.com/yourusername/Advanced-BadSuccessor.git
+git clone https://github.com/0xFuffM3/BadSuccessor-PoC.git
 cd Advanced-BadSuccessor
 ```
 
@@ -335,7 +335,7 @@ A: No. Properly configured AD environments are not vulnerable. Focus on removing
 ## 🧑‍💻 Contributors
 
 - **Original discovery:** Yuval Gordon (Akamai)
-- **Weaponization & advanced PoC:** [Your Name]
+- **Weaponization & advanced PoC:** 0xFuffM3
 - **Detection guidance:** SpecterOps
 
 ---
